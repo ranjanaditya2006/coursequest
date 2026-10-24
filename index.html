@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CourseQuest - Interactive Gamified Learning</title>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for JSX Compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    /* Perspective for 3D Flashcard flip */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 1);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Secure API Key Configuration Object
+    const API_CONFIG = {
+      key: "AQ.Ab8RN6L2gPIeuaSb96xrOcY-8zQduEkxBCJ7Uypvtzy0ITO8Jg",
+      service: "YouTube & CourseQuest AI Engine"
+    };
+
+    // Initial Courses Data
+    const DEFAULT_COURSES = [
+      {
+        id: 'c1',
+        title: 'Full-Stack React & Node.js Mastery',
+        youtubeDemoUrl: 'https://www.youtube.com/watch?v=kUMe1FH4CDg',
+        demoTitle: 'Why Full-Stack Development Powers Today\'s Digital Economy',
+        category: 'Web Development',
+        level: 'Intermediate',
+        xp: 1200,
+        duration: '6 Weeks',
+        desc: 'Master modern full-stack web development with React 18, Node.js REST APIs, Express, and database design from architecting to deployment.',
+        modules: [
+          {
+            id: 'm1',
+            title: 'Module 1: React Fundamentals & Component Architecture',
+            lessons: [
+              {
+                id: 'l1',
+                title: 'Understanding JSX & Component Hierarchy',
+                type: 'quiz',
+                xp: 100,
+                question: 'Which statement best describes React JSX syntax?',
+                options: [
+                  'A syntax extension that allows writing HTML-like markup inside JavaScript files.',
+                  'A database query language designed for fast client-side fetching.',
+                  'A strict CSS framework for styling components inline.'
+                ],
+                answer: 0,
+                explanation: 'JSX is a syntax extension for JavaScript that lets you structure component rendering using HTML-like elements seamlessly.'
+              },
+              {
+                id: 'l2',
+                title: 'State vs Props Deep Dive',
+                type: 'flashcard',
+                xp: 100,
+                front: 'What is the core structural difference between Props and State?',
+                back: 'Props are read-only immutable inputs passed from parent components, whereas State is internal managed data that triggers re-renders when updated.'
+              }
+            ]
+          },
+          {
+            id: 'm2',
+            title: 'Module 2: Server-Side API Architecture with Node.js',
+            lessons: [
+              {
+                id: 'l3',
+                title: 'Building Express Middleware',
+                type: 'quiz',
+                xp: 150,
+                question: 'What is the standard function signature for Express middleware?',
+                options: [
+                  '(req, res, next)',
+                  '(req, res)',
+                  '(data, callback)'
+                ],
+                answer: 0,
+                explanation: 'Express middleware functions receive the Request object, Response object, and the next middleware trigger function in the stack.'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'c2',
+        title: 'Python for Data Science & AI Engine',
+        youtubeDemoUrl: 'https://www.youtube.com/watch?v=RBSgSckvAMg',
+        demoTitle: 'The Importance of Python & AI in Transforming Modern Industry',
+        category: 'Data Science',
+        level: 'Beginner',
+        xp: 950,
+        duration: '4 Weeks',
+        desc: 'Learn data analytics, pandas, NumPy, data visualization, and machine learning foundation algorithms from scratch.',
+        modules: [
+          {
+            id: 'm3',
+            title: 'Module 1: Analytics & Data Frames with Pandas',
+            lessons: [
+              {
+                id: 'l4',
+                title: 'DataFrame Manipulations',
+                type: 'quiz',
+                xp: 100,
+                question: 'Which Pandas function is used to load a CSV file into a DataFrame?',
+                options: ['pd.read_csv()', 'pd.load_csv()', 'pd.parse_csv()'],
+                answer: 0,
+                explanation: 'pd.read_csv() parses tabular data from a CSV file into a structured Pandas DataFrame.'
+              },
+              {
+                id: 'l5',
+                title: 'Data Cleaning Essentials',
+                type: 'flashcard',
+                xp: 100,
+                front: 'How do you handle missing values in Pandas DataFrames?',
+                back: 'Use df.dropna() to remove missing records or df.fillna(val) to impute missing values with specific statistical values.'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'c3',
+        title: 'Cybersecurity & Ethical Hacking Essentials',
+        youtubeDemoUrl: 'https://www.youtube.com/watch?v=3Kq1MIfTWCE',
+        demoTitle: 'Why Cybersecurity is Critical for Global Software Infrastructure',
+        category: 'Cybersecurity',
+        level: 'Beginner',
+        xp: 1100,
+        duration: '5 Weeks',
+        desc: 'Understand threat landscapes, network security fundamentals, penetration testing workflows, and defensive architecture.',
+        modules: [
+          {
+            id: 'm4',
+            title: 'Module 1: Network Protocols & Security Fundamentals',
+            lessons: [
+              {
+                id: 'l6',
+                title: 'Understanding HTTPS and TLS Handshake',
+                type: 'quiz',
+                xp: 120,
+                question: 'What primary security mechanism does HTTPS introduce over standard HTTP?',
+                options: [
+                  'End-to-end data encryption using TLS/SSL protocols.',
+                  'Faster data transmission over UDP ports.',
+                  'Automatic compression of HTTP headers.'
+                ],
+                answer: 0,
+                explanation: 'HTTPS wraps standard HTTP communications inside TLS/SSL encryption, protecting data integrity and privacy.'
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // Initial User Data
+    const INITIAL_USER = {
+      name: 'Aditya Ranjan',
+      role: 'Full Stack Learner',
+      level: 4,
+      xp: 850,
+      streak: 5,
+      enrolledCourses: ['c1', 'c2'],
+      lessonProgress: { l1: true, l4: true },
+      unlockedBadges: ['b1', 'b2']
+    };
+
+    // Leaderboard Mock Data
+    const LEADERBOARD_USERS = [
+      { id: 'u1', name: 'Elena Rostova', xp: 3450, level: 14, streak: 18, avatar: 'ER', badge: '🥇 Legend' },
+      { id: 'u2', name: 'Marcus Chen', xp: 2890, level: 12, streak: 14, avatar: 'MC', badge: '🥈 Master' },
+      { id: 'u3', name: 'Sophia Patel', xp: 2100, level: 9, streak: 9, avatar: 'SP', badge: '🥉 Diamond' },
+      { id: 'u4', name: 'Aditya Ranjan (You)', xp: 850, level: 4, streak: 5, avatar: 'AR', badge: '⚡ Adventurer', isUser: true },
+      { id: 'u5', name: 'David Kim', xp: 720, level: 3, streak: 3, avatar: 'DK', badge: '🌱 Rising Star' }
+    ];
+
+    // Achievements Badges Data
+    const ACHIEVEMENTS_LIST = [
+      { id: 'b1', title: 'First Step', desc: 'Complete your first lesson quiz or flashcard.', icon: 'award', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+      { id: 'b2', title: 'Streak Master', desc: 'Maintain a study streak of 5 or more days.', icon: 'flame', color: 'bg-amber-50 text-amber-600 border-amber-200' },
+      { id: 'b3', title: 'Course Conqueror', desc: 'Complete all modules inside any enrolled course.', icon: 'trophy', color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+      { id: 'b4', title: 'Custom Creator', desc: 'Generate your first custom course roadmap.', icon: 'sparkles', color: 'bg-purple-50 text-purple-600 border-purple-200' },
+      { id: 'b5', title: 'Knowledge Titan', desc: 'Reach Level 5 and accumulate 1,000 Total XP.', icon: 'zap', color: 'bg-blue-50 text-blue-600 border-blue-200' }
+    ];
+
+    function App() {
+      // Persistence with LocalStorage
+      const [courses, setCourses] = useState(() => {
+        const saved = localStorage.getItem('coursequest_courses');
+        return saved ? JSON.parse(saved) : DEFAULT_COURSES;
+      });
+
+      const [user, setUser] = useState(() => {
+        const saved = localStorage.getItem('coursequest_user');
+        return saved ? JSON.parse(saved) : INITIAL_USER;
+      });
+
+      // Navigation & Modal State
+      const [activeTab, setActiveTab] = useState('Overview');
+      const [selectedCourse, setSelectedCourse] = useState(null);
+      const [currentLesson, setCurrentLesson] = useState(null);
+
+      // Quiz & Flashcard Interactive States
+      const [quizSelection, setQuizSelection] = useState(null);
+      const [quizSubmitted, setQuizSubmitted] = useState(false);
+      const [cardFlipped, setCardFlipped] = useState(false);
+
+      // Search & Filtering
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterCategory, setFilterCategory] = useState('All');
+
+      // Add Custom Course Modal State
+      const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
+      const [isGenerating, setIsGenerating] = useState(false);
+      const [courseForm, setCourseForm] = useState({
+        title: '',
+        category: 'Programming',
+        level: 'Beginner',
+        aim: '',
+        duration: '4 Weeks',
+        targetSkills: '',
+        description: ''
+      });
+
+      // Notification Message
+      const [toastMessage, setToastMessage] = useState(null);
+
+      useEffect(() => {
+        localStorage.setItem('coursequest_user', JSON.stringify(user));
+      }, [user]);
+
+      useEffect(() => {
+        localStorage.setItem('coursequest_courses', JSON.stringify(courses));
+      }, [courses]);
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [activeTab, selectedCourse, currentLesson, isAddCourseOpen, quizSubmitted, cardFlipped]);
+
+      const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3500);
+      };
+
+      // Gamification Logic
+      const addXP = (amount) => {
+        setUser(prev => {
+          const newXP = prev.xp + amount;
+          const newLevel = Math.floor(newXP / 250) + 1;
+          
+          let newBadges = [...prev.unlockedBadges];
+          if (newXP >= 1000 && !newBadges.includes('b5')) {
+            newBadges.push('b5');
+            showToast('🏆 Achievement Unlocked: Knowledge Titan!');
+          }
+
+          return { ...prev, xp: newXP, level: newLevel, unlockedBadges: newBadges };
+        });
+      };
+
+      const completeLesson = (lessonId, xp) => {
+        if (!user.lessonProgress[lessonId]) {
+          setUser(prev => {
+            const updatedProgress = { ...prev.lessonProgress, [lessonId]: true };
+            let updatedBadges = [...prev.unlockedBadges];
+            
+            if (!updatedBadges.includes('b1')) {
+              updatedBadges.push('b1');
+              showToast('🎖️ Achievement Unlocked: First Step!');
+            }
+
+            return { ...prev, lessonProgress: updatedProgress, unlockedBadges: updatedBadges };
+          });
+          addXP(xp);
+          showToast(`✨ Lesson Completed! +${xp} XP Earned`);
+        } else {
+          showToast('👍 Lesson reviewed!');
+        }
+      };
+
+      const enrollCourse = (courseId) => {
+        if (!user.enrolledCourses.includes(courseId)) {
+          setUser(prev => ({
+            ...prev,
+            enrolledCourses: [...prev.enrolledCourses, courseId]
+          }));
+          showToast('🎉 Successfully Enrolled in Course!');
+        }
+      };
+
+      // Add Custom Course & Roadmap Engine
+      const handleCreateCourse = (e) => {
+        e.preventDefault();
+        if (!courseForm.title.trim()) return;
+
+        setIsGenerating(true);
+
+        setTimeout(() => {
+          const courseId = 'custom_' + Date.now();
+          const skillsArr = courseForm.targetSkills.split(',').map(s => s.trim()).filter(Boolean);
+          const skillText = skillsArr.length ? skillsArr.join(', ') : courseForm.title;
+
+          const newCourse = {
+            id: courseId,
+            title: courseForm.title,
+            category: courseForm.category,
+            level: courseForm.level,
+            xp: 1200,
+            duration: courseForm.duration || '4 Weeks',
+            desc: courseForm.description || `Custom tailored curriculum designed to master ${courseForm.title} focusing on ${courseForm.aim || 'practical engineering'}.`,
+            youtubeDemoUrl: 'https://www.youtube.com/watch?v=kUMe1FH4CDg',
+            demoTitle: `Why Mastering ${courseForm.title} is Essential for Tech Today`,
+            modules: [
+              {
+                id: `${courseId}_m1`,
+                title: `Module 1: Foundations & Core Architecture of ${courseForm.title}`,
+                lessons: [
+                  {
+                    id: `${courseId}_l1`,
+                    title: `Key Principles & System Concepts`,
+                    type: 'quiz',
+                    xp: 100,
+                    question: `What primary milestone do you achieve by mastering ${courseForm.title}?`,
+                    options: [
+                      `Achieve target objective: ${courseForm.aim || 'Building scalable applications'} efficiently.`,
+                      'Skipping architectural planning and writing unmaintained scripts.',
+                      'Relying solely on theoretical syntax without implementation.'
+                    ],
+                    answer: 0,
+                    explanation: `Establishing solid fundamentals ensures success toward your aim: ${courseForm.aim || 'mastery'}.`
+                  },
+                  {
+                    id: `${courseId}_l2`,
+                    title: `Essential Tools & Skillsets (${skillText})`,
+                    type: 'flashcard',
+                    xp: 100,
+                    front: `Why are core skills like ${skillText} vital?`,
+                    back: `They equip you with the exact technical toolkit needed to design, debug, and deploy production solutions in ${courseForm.category}.`
+                  }
+                ]
+              },
+              {
+                id: `${courseId}_m2`,
+                title: `Module 2: Real-World Implementation & ${courseForm.aim || 'Advanced Workflows'}`,
+                lessons: [
+                  {
+                    id: `${courseId}_l3`,
+                    title: `Production Workflow & Best Practices`,
+                    type: 'quiz',
+                    xp: 150,
+                    question: `Which methodology best guarantees reliability in ${courseForm.category}?`,
+                    options: [
+                      'Modular components, automated testing, and standard design patterns.',
+                      'Building monolithic unverified routines directly in production.',
+                      'Bypassing code reviews and error handling handling.'
+                    ],
+                    answer: 0,
+                    explanation: 'Clean, modular design combined with validation guarantees robust system architecture.'
+                  }
+                ]
+              }
+            ]
+          };
+
+          setCourses(prev => [newCourse, ...prev]);
+          
+          // Unlock custom creator badge
+          setUser(prev => {
+            let updatedBadges = [...prev.unlockedBadges];
+            if (!updatedBadges.includes('b4')) {
+              updatedBadges.push('b4');
+            }
+            return { ...prev, unlockedBadges: updatedBadges };
+          });
+
+          setIsGenerating(false);
+          setIsAddCourseOpen(false);
+          enrollCourse(courseId);
+          setSelectedCourse(newCourse);
+          showToast('⚡ AI Roadmap Generated & Course Unlocked!');
+
+          // Reset Form
+          setCourseForm({
+            title: '',
+            category: 'Programming',
+            level: 'Beginner',
+            aim: '',
+            duration: '4 Weeks',
+            targetSkills: '',
+            description: ''
+          });
+        }, 1200);
+      };
+
+      const handleResetData = () => {
+        if (confirm("Reset all course data, user progress, and XP to default defaults?")) {
+          localStorage.removeItem('coursequest_courses');
+          localStorage.removeItem('coursequest_user');
+          setCourses(DEFAULT_COURSES);
+          setUser(INITIAL_USER);
+          setSelectedCourse(null);
+          setCurrentLesson(null);
+          showToast('🔄 Demo data reset successfully!');
+        }
+      };
+
+      const filteredCourses = useMemo(() => {
+        return courses.filter(course => {
+          const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                course.desc.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchesCategory = filterCategory === 'All' || course.category === filterCategory;
+          return matchesSearch && matchesCategory;
+        });
+      }, [courses, searchQuery, filterCategory]);
+
+      const categoriesList = useMemo(() => {
+        const set = new Set(courses.map(c => c.category));
+        return ['All', ...Array.from(set)];
+      }, [courses]);
+
+      return (
+        <div className="flex h-screen w-screen bg-slate-50 overflow-hidden">
+          {/* Toast Notification */}
+          {toastMessage && (
+            <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-bounce">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+              {toastMessage}
+            </div>
+          )}
+
+          {/* Sidebar */}
+          <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 z-10">
+            <div>
+              {/* Brand Logo Header */}
+              <div className="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div className="p-2.5 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                  <i data-lucide="zap" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-lg text-slate-900 tracking-tight leading-tight">CourseQuest</h1>
+                  <p className="text-xs text-slate-400 font-semibold">Master Anything</p>
+                </div>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="p-4 space-y-1.5">
+                {[
+                  { name: 'Overview', icon: 'layout-dashboard' },
+                  { name: 'My Courses', icon: 'book-open' },
+                  { name: 'Explore', icon: 'search' },
+                  { name: 'Achievements', icon: 'award' },
+                  { name: 'Leaderboard', icon: 'trophy' },
+                  { name: 'Help Center', icon: 'help-circle' },
+                  { name: 'Settings', icon: 'settings' }
+                ].map(item => {
+                  const isActive = activeTab === item.name && !selectedCourse && !currentLesson;
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        setActiveTab(item.name);
+                        setSelectedCourse(null);
+                        setCurrentLesson(null);
+                      }}
+                      className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                        isActive
+                          ? 'bg-indigo-50 text-indigo-600 shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <i data-lucide={item.icon} class={`w-5 h-5 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}></i>
+                      {item.name}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Profile Summary Footer */}
+            <div className="p-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-2xl flex items-center gap-3 border border-slate-200/60">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center shadow-md text-sm">
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-extrabold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[11px] text-indigo-600 font-bold">Level {user.level} Adventurer</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col overflow-hidden relative">
+            {/* Top Navigation Header */}
+            <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 z-10">
+              <div className="flex items-center gap-3">
+                {(selectedCourse || currentLesson) && (
+                  <button
+                    onClick={() => {
+                      if (currentLesson) setCurrentLesson(null);
+                      else setSelectedCourse(null);
+                    }}
+                    className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-all"
+                  >
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                  </button>
+                )}
+                <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                  {currentLesson ? currentLesson.title : selectedCourse ? selectedCourse.title : activeTab}
+                </h2>
+              </div>
+
+              {/* Gamification Counters */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-extrabold border border-amber-200 shadow-sm">
+                  <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i>
+                  <span>{user.streak} Day Streak</span>
+                </div>
+                <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-full text-xs font-extrabold border border-indigo-200 shadow-sm">
+                  <i data-lucide="zap" class="w-4 h-4 text-indigo-600"></i>
+                  <span>{user.xp} XP</span>
+                </div>
+              </div>
+            </header>
+
+            {/* Dynamic Tab Body */}
+            <div className="flex-1 overflow-y-auto p-8">
+              
+              {/* LESSON ENGINE VIEW */}
+              {currentLesson ? (
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                        {currentLesson.type === 'quiz' ? 'Multiple Choice Quiz' : 'Concept Flashcard'}
+                      </span>
+                      <span className="text-xs font-extrabold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> +{currentLesson.xp} XP
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-extrabold text-slate-900 leading-snug">{currentLesson.title}</h3>
+
+                    {/* QUIZ ENGINE */}
+                    {currentLesson.type === 'quiz' && (
+                      <div className="space-y-4 pt-2">
+                        <p className="text-slate-700 font-semibold text-base leading-relaxed">{currentLesson.question}</p>
+                        
+                        <div className="space-y-2.5">
+                          {currentLesson.options.map((opt, idx) => (
+                            <button
+                              key={idx}
+                              disabled={quizSubmitted}
+                              onClick={() => setQuizSelection(idx)}
+                              className={`w-full text-left p-4 rounded-2xl border text-xs sm:text-sm font-bold transition-all flex items-center justify-between ${
+                                quizSelection === idx
+                                  ? 'border-indigo-600 bg-indigo-50 text-indigo-950 shadow-sm'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                              }`}
+                            >
+                              <span>{opt}</span>
+                              <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${quizSelection === idx ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'}`}>
+                                {quizSelection === idx && <i data-lucide="check" class="w-3 h-3"></i>}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        {!quizSubmitted ? (
+                          <button
+                            disabled={quizSelection === null}
+                            onClick={() => {
+                              setQuizSubmitted(true);
+                              if (quizSelection === currentLesson.answer) {
+                                completeLesson(currentLesson.id, currentLesson.xp);
+                              }
+                            }}
+                            className="w-full mt-4 py-3.5 bg-indigo-600 text-white rounded-2xl font-extrabold text-sm hover:bg-indigo-700 disabled:opacity-50 shadow-md shadow-indigo-100 transition-all"
+                          >
+                            Submit Answer
+                          </button>
+                        ) : (
+                          <div className={`p-5 rounded-2xl border space-y-2 ${quizSelection === currentLesson.answer ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
+                            <div className="flex items-center gap-2">
+                              <i data-lucide={quizSelection === currentLesson.answer ? "check-circle" : "x-circle"} class="w-5 h-5"></i>
+                              <p className="font-extrabold text-sm">
+                                {quizSelection === currentLesson.answer ? 'Excellent! Correct Answer.' : 'Incorrect Answer.'}
+                              </p>
+                            </div>
+                            <p className="text-xs font-medium opacity-90 leading-relaxed">{currentLesson.explanation}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* FLASHCARD ENGINE */}
+                    {currentLesson.type === 'flashcard' && (
+                      <div className="space-y-5 pt-2">
+                        <div
+                          onClick={() => setCardFlipped(!cardFlipped)}
+                          className="h-56 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-8 rounded-3xl flex flex-col justify-between cursor-pointer shadow-xl relative overflow-hidden transition-all hover:scale-[1.01]"
+                        >
+                          <div className="flex justify-between items-center text-indigo-300 text-xs font-extrabold uppercase tracking-widest">
+                            <span>{cardFlipped ? 'Answer Key' : 'Concept Question'}</span>
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                          </div>
+                          
+                          <p className="text-center font-bold text-base sm:text-lg text-slate-100 px-4">
+                            {cardFlipped ? currentLesson.back : currentLesson.front}
+                          </p>
+
+                          <p className="text-center text-[11px] text-indigo-300 font-semibold">
+                            Tap card to flip view
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => completeLesson(currentLesson.id, currentLesson.xp)}
+                          className="w-full py-3.5 bg-emerald-600 text-white rounded-2xl font-extrabold text-sm hover:bg-emerald-700 shadow-md shadow-emerald-100 transition-all flex items-center justify-center gap-2"
+                        >
+                          <i data-lucide="check-circle" class="w-4 h-4"></i> Mark Concept as Mastered (+{currentLesson.xp} XP)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : selectedCourse ? (
+
+                /* COURSE ROADMAP VIEW */
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {/* Header Card */}
+                  <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                          {selectedCourse.category}
+                        </span>
+                        <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{selectedCourse.title}</h3>
+                        <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-medium leading-relaxed">{selectedCourse.desc}</p>
+                      </div>
+                      
+                      {!user.enrolledCourses.includes(selectedCourse.id) ? (
+                        <button
+                          onClick={() => enrollCourse(selectedCourse.id)}
+                          className="px-6 py-3 bg-indigo-600 text-white font-extrabold rounded-2xl text-xs hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-all shrink-0"
+                        >
+                          Enroll in Course
+                        </button>
+                      ) : (
+                        <span className="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-2xl border border-emerald-200 flex items-center gap-1.5 shrink-0">
+                          <i data-lucide="check" class="w-4 h-4"></i> Enrolled
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* YouTube Intro Demo Video Section */}
+                  <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl space-y-4 border border-slate-800">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-900/50">
+                          <i data-lucide="play" class="w-5 h-5 fill-white"></i>
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm sm:text-base">Course Intro & Video Demo</h4>
+                          <p className="text-xs text-slate-300 font-medium">Why software engineering & code power today's global economy</p>
+                        </div>
+                      </div>
+                      <a
+                        href={selectedCourse.youtubeDemoUrl || "https://www.youtube.com/watch?v=kUMe1FH4CDg"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-2 shadow-md transition-all shrink-0"
+                      >
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Watch Video Preview
+                      </a>
+                    </div>
+                    <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/10 text-xs text-slate-200 leading-relaxed font-medium">
+                      <p className="font-extrabold text-white mb-1">💡 {selectedCourse.demoTitle || "Why Code Matters Today"}</p>
+                      Software literacy is the most foundational skill of the digital era. Understanding code unlocks your ability to build scalable systems, automate critical tasks, and lead tech innovation.
+                    </div>
+                  </div>
+
+                  {/* Modules Accordion */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-extrabold text-slate-900 tracking-tight">Learning Modules & Quizzes</h4>
+                    {selectedCourse.modules.map((mod, mIdx) => (
+                      <div key={mod.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h5 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 text-xs flex items-center justify-center font-black">
+                            {mIdx + 1}
+                          </span>
+                          {mod.title}
+                        </h5>
+                        <div className="space-y-2">
+                          {mod.lessons.map(les => {
+                            const isDone = user.lessonProgress[les.id];
+                            return (
+                              <div
+                                key={les.id}
+                                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 transition-all border border-slate-100"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {isDone ? (
+                                    <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+                                  ) : (
+                                    <i data-lucide="play-circle" class="w-5 h-5 text-indigo-500"></i>
+                                  )}
+                                  <div>
+                                    <p className="text-xs sm:text-sm font-extrabold text-slate-800">{les.title}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">{les.type} • +{les.xp} XP</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setCurrentLesson(les);
+                                    setQuizSubmitted(false);
+                                    setQuizSelection(null);
+                                    setCardFlipped(false);
+                                  }}
+                                  className="px-4 py-2 text-xs font-extrabold bg-white text-indigo-600 border border-slate-200 rounded-xl hover:border-indigo-600 shadow-sm transition-all"
+                                >
+                                  {isDone ? 'Review' : 'Start'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+
+                /* TAB VIEWS */
+                <div className="max-w-5xl mx-auto space-y-8">
+                  {/* TAB 1: OVERVIEW */}
+                  {activeTab === 'Overview' && (
+                    <div className="space-y-8">
+                      {/* Hero Welcome Banner */}
+                      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                        <div className="relative z-10 max-w-xl space-y-3">
+                          <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-extrabold tracking-wider uppercase">
+                            Level {user.level} Explorer
+                          </span>
+                          <h3 className="text-3xl font-extrabold tracking-tight">Welcome back, {user.name}! 👋</h3>
+                          <p className="text-indigo-100 text-xs sm:text-sm font-medium leading-relaxed">
+                            You're currently on a <strong className="text-amber-300 font-bold">{user.streak}-day learning streak</strong>! Complete interactive modules, solve quizzes, and create custom learning paths to level up.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Stats Overview Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Enrolled Courses</p>
+                            <p className="text-3xl font-black text-slate-900 mt-1">{user.enrolledCourses.length}</p>
+                          </div>
+                          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                            <i data-lucide="book-open" class="w-6 h-6"></i>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Experience Points</p>
+                            <p className="text-3xl font-black text-indigo-600 mt-1">{user.xp} XP</p>
+                          </div>
+                          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                            <i data-lucide="zap" class="w-6 h-6"></i>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Active Streak</p>
+                            <p className="text-3xl font-black text-amber-500 mt-1">{user.streak} Days</p>
+                          </div>
+                          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+                            <i data-lucide="flame" class="w-6 h-6"></i>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Continue Section */}
+                      <div className="space-y-4">
+                        <h4 className="text-base font-extrabold text-slate-900">In Progress Courses</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {courses.filter(c => user.enrolledCourses.includes(c.id)).map(course => (
+                            <div key={course.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-200 transition-all">
+                              <div className="space-y-2">
+                                <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
+                                  {course.category}
+                                </span>
+                                <h5 className="font-extrabold text-base text-slate-900 pt-1">{course.title}</h5>
+                                <p className="text-xs text-slate-500 font-medium line-clamp-2">{course.desc}</p>
+                              </div>
+                              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-400">{course.duration}</span>
+                                <button
+                                  onClick={() => setSelectedCourse(course)}
+                                  className="px-4 py-2 bg-indigo-600 text-white font-extrabold text-xs rounded-xl hover:bg-indigo-700 shadow-sm"
+                                >
+                                  Resume Road
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: MY COURSES */}
+                  {activeTab === 'My Courses' && (
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-extrabold text-slate-900">Enrolled Learning Modules</h3>
+                        <span className="text-xs font-extrabold text-slate-400">{user.enrolledCourses.length} Enrolled</span>
+                      </div>
+
+                      {user.enrolledCourses.length === 0 ? (
+                        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 space-y-3">
+                          <p className="text-slate-500 text-sm font-semibold">You haven't enrolled in any courses yet.</p>
+                          <button
+                            onClick={() => setActiveTab('Explore')}
+                            className="px-5 py-2.5 bg-indigo-600 text-white font-extrabold text-xs rounded-xl hover:bg-indigo-700 shadow-sm"
+                          >
+                            Explore Catalog
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {courses.filter(c => user.enrolledCourses.includes(c.id)).map(course => (
+                            <div key={course.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-200 transition-all">
+                              <div>
+                                <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
+                                  {course.category}
+                                </span>
+                                <h4 className="font-extrabold text-base text-slate-900 mt-3">{course.title}</h4>
+                                <p className="text-xs text-slate-500 mt-2 font-medium leading-relaxed line-clamp-2">{course.desc}</p>
+                              </div>
+                              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-400">{course.duration}</span>
+                                <button
+                                  onClick={() => setSelectedCourse(course)}
+                                  className="px-4 py-2 bg-indigo-600 text-white font-extrabold text-xs rounded-xl hover:bg-indigo-700 shadow-sm"
+                                >
+                                  Open Course
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 3: EXPLORE (CATALOG & ADD CUSTOM COURSE) */}
+                  {activeTab === 'Explore' && (
+                    <div className="space-y-6">
+                      {/* Search Bar & Custom Course Trigger */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-2xl flex-1 w-full border border-slate-100">
+                          <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                          <input
+                            type="text"
+                            placeholder="Search courses by keyword, language, or title..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full text-xs sm:text-sm font-semibold bg-transparent focus:outline-none text-slate-800"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => setIsAddCourseOpen(true)}
+                          className="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-indigo-100 transition-all shrink-0"
+                        >
+                          <i data-lucide="plus" class="w-4 h-4"></i> Add Custom Course
+                        </button>
+                      </div>
+
+                      {/* Category Filters */}
+                      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                        {categoriesList.map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setFilterCategory(cat)}
+                            className={`px-4 py-2 rounded-xl text-xs font-extrabold shrink-0 transition-all ${
+                              filterCategory === cat
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Course Cards Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {filteredCourses.map(course => (
+                          <div key={course.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-300 transition-all">
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
+                                  {course.category}
+                                </span>
+                                <span className="text-xs font-extrabold text-slate-400">{course.level}</span>
+                              </div>
+                              <h4 className="font-extrabold text-base text-slate-900 mt-3">{course.title}</h4>
+                              <p className="text-xs text-slate-500 mt-2 font-medium leading-relaxed line-clamp-2">{course.desc}</p>
+                            </div>
+                            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                              <span className="text-xs font-extrabold text-slate-400">{course.duration}</span>
+                              <button
+                                onClick={() => setSelectedCourse(course)}
+                                className="px-4 py-2 bg-indigo-600 text-white font-extrabold text-xs rounded-xl hover:bg-indigo-700 shadow-sm"
+                              >
+                                View Roadmap
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: ACHIEVEMENTS */}
+                  {activeTab === 'Achievements' && (
+                    <div className="space-y-6">
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-extrabold text-slate-900">Badges & Accomplishments</h3>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">Unlocked {user.unlockedBadges.length} of {ACHIEVEMENTS_LIST.length} achievement honors</p>
+                        </div>
+                        <div className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-2xl text-xs font-extrabold">
+                          {Math.round((user.unlockedBadges.length / ACHIEVEMENTS_LIST.length) * 100)}% Completed
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {ACHIEVEMENTS_LIST.map(badge => {
+                          const isUnlocked = user.unlockedBadges.includes(badge.id);
+                          return (
+                            <div
+                              key={badge.id}
+                              className={`p-6 rounded-3xl border flex items-start gap-4 transition-all ${
+                                isUnlocked
+                                  ? `${badge.color} shadow-sm`
+                                  : 'bg-white border-slate-200 opacity-60 grayscale'
+                              }`}
+                            >
+                              <div className="p-3 bg-white rounded-2xl border shadow-sm">
+                                <i data-lucide={badge.icon} class="w-6 h-6"></i>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-extrabold text-sm text-slate-900">{badge.title}</h4>
+                                  {isUnlocked && <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>}
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">{badge.desc}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: LEADERBOARD */}
+                  {activeTab === 'Leaderboard' && (
+                    <div className="space-y-6">
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h3 className="text-lg font-extrabold text-slate-900">Global Adventurer Leaderboard</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-1">Compete with learners worldwide based on weekly Experience Points gains.</p>
+                      </div>
+
+                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="divide-y divide-slate-100">
+                          {LEADERBOARD_USERS.map((lbUser, idx) => (
+                            <div
+                              key={lbUser.id}
+                              className={`p-4 sm:p-5 flex items-center justify-between transition-all ${
+                                lbUser.isUser ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <span className="font-black text-xs sm:text-sm text-slate-400 w-6 text-center">
+                                  #{idx + 1}
+                                </span>
+                                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">
+                                  {lbUser.avatar}
+                                </div>
+                                <div>
+                                  <p className="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                                    {lbUser.name}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400 font-semibold">{lbUser.badge} • Level {lbUser.level}</p>
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <p className="font-black text-xs sm:text-sm text-indigo-600">{lbUser.xp} XP</p>
+                                <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1 justify-end">
+                                  <i data-lucide="flame" class="w-3 h-3"></i> {lbUser.streak} Days
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 6: HELP CENTER */}
+                  {activeTab === 'Help Center' && (
+                    <div className="space-y-6">
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h3 className="text-lg font-extrabold text-slate-900">Frequently Asked Questions</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-1">Get support and learn how CourseQuest gamified roadmap generation works.</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        {[
+                          { q: 'How does the Add Custom Course generator work?', a: 'When you submit course objectives and key skills, CourseQuest structures dynamic modules containing custom quizzes and conceptual flashcards.' },
+                          { q: 'How is my study streak calculated?', a: 'Completing at least one quiz or flashcard daily increments your continuous daily streak counter.' },
+                          { q: 'What are Experience Points (XP) used for?', a: 'XP advances your Adventurer level on the global leaderboard and unlocks prestigious achievement badges.' }
+                        ].map((faq, idx) => (
+                          <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                            <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                              <i data-lucide="help-circle" class="w-4 h-4 text-indigo-600"></i>
+                              {faq.q}
+                            </h4>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed pl-6">{faq.a}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 7: SETTINGS */}
+                  {activeTab === 'Settings' && (
+                    <div className="space-y-6">
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 className="text-lg font-extrabold text-slate-900">Account Preferences</h3>
+                        
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <label className="block text-xs font-extrabold text-slate-700 mb-1">Display Name</label>
+                            <input
+                              type="text"
+                              value={user.name}
+                              onChange={(e) => setUser({ ...user, name: e.target.value })}
+                              className="w-full max-w-md px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-extrabold text-slate-700 mb-1">Adventurer Title</label>
+                            <input
+                              type="text"
+                              value={user.role}
+                              onChange={(e) => setUser({ ...user, role: e.target.value })}
+                              className="w-full max-w-md px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reset Demo Data Action */}
+                      <div className="bg-rose-50 p-6 rounded-3xl border border-rose-200 space-y-3">
+                        <h4 className="font-extrabold text-rose-900 text-sm">Reset Demo State</h4>
+                        <p className="text-xs text-rose-700 font-medium leading-relaxed">
+                          Resetting will clear all created custom courses, reset your XP level, and restore default course data.
+                        </p>
+                        <button
+                          onClick={handleResetData}
+                          className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all"
+                        >
+                          Reset App Data
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+          </main>
+
+          {/* ADD CUSTOM COURSE MODAL DIALOG */}
+          {isAddCourseOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-8 border border-slate-200 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
+                <button
+                  onClick={() => setIsAddCourseOpen(false)}
+                  className="absolute top-6 right-6 p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                >
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-900">Generate Custom Roadmap</h3>
+                    <p className="text-xs text-slate-500 font-semibold">Tailor a complete course roadmap to your exact goal</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateCourse} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-700 mb-1">Course Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Distributed Microservices & Docker"
+                      value={courseForm.title}
+                      onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 mb-1">Category Field</label>
+                      <select
+                        value={courseForm.category}
+                        onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white"
+                      >
+                        <option value="Programming">Programming</option>
+                        <option value="Data Science">Data Science</option>
+                        <option value="AI & Machine Learning">AI & ML</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Cybersecurity">Cybersecurity</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 mb-1">Difficulty Level</label>
+                      <select
+                        value={courseForm.level}
+                        onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white"
+                      >
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-700 mb-1">Primary Learning Objective / Aim</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Architect cloud-native software for enterprise production"
+                      value={courseForm.aim}
+                      onChange={(e) => setCourseForm({ ...courseForm, aim: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 mb-1">Target Duration</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 4 Weeks"
+                        value={courseForm.duration}
+                        onChange={(e) => setCourseForm({ ...courseForm, duration: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-700 mb-1">Key Skills (Comma Separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Docker, Redis, Kafka"
+                        value={courseForm.targetSkills}
+                        onChange={(e) => setCourseForm({ ...courseForm, targetSkills: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-700 mb-1">Description (Optional)</label>
+                    <textarea
+                      rows="2"
+                      placeholder="Brief overview of course outcome..."
+                      value={courseForm.description}
+                      onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600"
+                    ></textarea>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddCourseOpen(false)}
+                      className="px-5 py-2.5 rounded-xl font-extrabold text-xs text-slate-600 hover:bg-slate-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isGenerating}
+                      className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md shadow-indigo-100 transition-all disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i> Building Roadmap...
+                        </>
+                      ) : (
+                        <>
+                          <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Course
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
